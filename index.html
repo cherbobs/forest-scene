@@ -5,7 +5,12 @@
     <script type="module">
       import * as THREE from "https://cdn.skypack.dev/three@0.132.2";
       import { OrbitControls } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js";
+      import { GLTFLoader } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/GLTFLoader.js";
+      import { TDSLoader } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/TDSLoader.js";
 
+      var loader = new GLTFLoader();
+      const loader3ds = new TDSLoader();
+      var tree;
       // renderer
 
       var renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -15,7 +20,7 @@
       // scene
 
       var scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0);
+      scene.background = new THREE.Color(0x87ceeb);
 
       // camera
 
@@ -30,22 +35,21 @@
 
       camera.lookAt(0, 0, 0);
 
-      /* 			// mesh
+      // mesh
 
-			var geometry = new THREE.BoxGeometry(5,5,5);
+      var geometry = new THREE.BoxGeometry(5, 5, 5);
 
-			{
+      {
+        var orangeMaterial = new THREE.MeshPhongMaterial({
+          color: 0xff0000,
+          side: THREE.DoubleSide,
+        });
 
-				var orangeMaterial = new THREE.MeshPhongMaterial({
-			        color: 0xff0000,
-			        side: THREE.DoubleSide
-			    });
-
-			    var mesh = new THREE.Mesh(geometry, orangeMaterial);
-			    mesh.position.y = 2.5
-			    scene.add(mesh);
-			}
-
+        var mesh = new THREE.Mesh(geometry, orangeMaterial);
+        mesh.position.y = 2.5;
+        scene.add(mesh);
+      }
+      /*
 			{
 				// DRY / don't repeat yourself
 
@@ -73,17 +77,40 @@
         });
 
         var mesh = new THREE.Mesh(geometry, material);
-        mesh.rotation.x = -Math.PI / 2;
+        mesh.rotation.x = Math.PI / 2;
         mesh.position.y = 0; // position au sol
         scene.add(mesh);
       }
+
+      loader3ds.load("./nature/tree/tree.3ds", function (object) {
+        tree = object;
+        tree.rotation.x = -Math.PI / 2;
+        tree.scale.set(3, 3, 3);
+
+        const startX = -100;
+        const spacingX = 50;
+        const frontZ = -100;
+        const backZ = 100;
+
+        for (let i = 0; i < 6; i++) {
+          // Arbres à gauche
+          const frontTree = tree.clone();
+          frontTree.position.set(startX + i * spacingX, 0, frontZ);
+          scene.add(frontTree);
+
+          // Arbres à droite
+          const backTree = tree.clone();
+          backTree.position.set(startX + i * spacingX, 0, backZ);
+          scene.add(backTree);
+        }
+      });
 
       /*       const axesHelper = new THREE.AxesHelper(20);
       scene.add(axesHelper); */
 
       // light
 
-      var light = new THREE.AmbientLight(0xffffff, 0.8);
+      var light = new THREE.AmbientLight(0xffffff, 0.2);
       scene.add(light);
 
       var sun = new THREE.DirectionalLight(0xffffff, 1);
