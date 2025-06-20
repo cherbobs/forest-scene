@@ -1,0 +1,111 @@
+<html>
+  <head></head>
+  <body>
+    <div id="threejs"></div>
+    <script type="module">
+      import * as THREE from "https://cdn.skypack.dev/three@0.132.2";
+      import { OrbitControls } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js";
+
+      // renderer
+
+      var renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // scene
+
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0);
+
+      // camera
+
+      var camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1550
+      );
+
+      camera.position.z = 50;
+      camera.position.y = 40;
+      camera.position.x = 40;
+
+      camera.lookAt(0, 0, 0);
+
+      /* 			// mesh
+
+			var geometry = new THREE.BoxGeometry(5,5,5);
+
+			{
+
+				var orangeMaterial = new THREE.MeshPhongMaterial({
+			        color: 0xff0000,
+			        side: THREE.DoubleSide
+			    });
+
+			    var mesh = new THREE.Mesh(geometry, orangeMaterial);
+			    mesh.position.y = 2.5
+			    scene.add(mesh);
+			}
+
+			{
+				// DRY / don't repeat yourself
+
+				var greenMaterial = new THREE.MeshPhongMaterial({
+			        color: 0x00ff00,
+			        side: THREE.DoubleSide
+			    });
+
+			    var mesh = new THREE.Mesh(geometry, greenMaterial);
+			    mesh.position.y = 2.5
+			    mesh.position.x = 20;
+			    mesh.position.z = 20;
+			    scene.add(mesh);
+			} */
+
+      {
+        var loader = new THREE.TextureLoader();
+        var texture = loader.load("./nature/grass/grass-color.png");
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        var geometry = new THREE.PlaneGeometry(200, 200);
+        var material = new THREE.MeshStandardMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+        });
+
+        var mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.y = 0; // position au sol
+        scene.add(mesh);
+      }
+
+/*       const axesHelper = new THREE.AxesHelper(20);
+      scene.add(axesHelper); */
+
+      // light
+
+      var light = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(light);
+
+      var sun = new THREE.DirectionalLight(0xffffff, 1);
+
+      sun.position.set(0, 10, 0);
+      sun.target.position.set(-5, 0, 0);
+
+      scene.add(sun);
+
+      var container = document.getElementById("threejs");
+      container.appendChild(renderer.domElement);
+
+      var controls = new OrbitControls(camera, renderer.domElement);
+
+      requestAnimationFrame(render);
+
+      function render() {
+        renderer.render(scene, camera);
+        requestAnimationFrame(render);
+      }
+    </script>
+  </body>
+</html>
