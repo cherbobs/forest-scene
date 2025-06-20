@@ -8,80 +8,57 @@
       import { GLTFLoader } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/GLTFLoader.js";
       import { TDSLoader } from "https://cdn.skypack.dev/three@0.132.2/examples/jsm/loaders/TDSLoader.js";
 
-      var loader = new GLTFLoader();
       const loader3ds = new TDSLoader();
-      var tree;
-      // renderer
+      const textureLoader = new THREE.TextureLoader();
 
-      var renderer = new THREE.WebGLRenderer({ antialias: true });
+      let tree;
+
+      // renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
 
       // scene
-
-      var scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x87ceeb);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x87ceeb); // ciel bleu clair
 
       // camera
-
-      var camera = new THREE.PerspectiveCamera(
+      const camera = new THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
         0.1,
         1550
       );
-
       camera.position.set(100, 30, 40);
-
       camera.lookAt(0, 0, 0);
 
-      // mesh
+      /* / box de test
+      const geometry = new THREE.BoxGeometry(5, 5, 5);
+      const orangeMaterial = new THREE.MeshPhongMaterial({
+        color: 0xff0000,
+        side: THREE.DoubleSide,
+      });
+      const boxMesh = new THREE.Mesh(geometry, orangeMaterial);
+      boxMesh.position.y = 2.5;
+      scene.add(boxMesh); */
 
-      var geometry = new THREE.BoxGeometry(5, 5, 5);
+      // sol
+      const groundTexture = textureLoader.load(
+        "./nature/grass/grass-color.png"
+      );
+      groundTexture.colorSpace = THREE.SRGBColorSpace;
 
-      {
-        var orangeMaterial = new THREE.MeshPhongMaterial({
-          color: 0xff0000,
-          side: THREE.DoubleSide,
-        });
+      const groundGeometry = new THREE.PlaneGeometry(400, 300);
+      const groundMaterial = new THREE.MeshStandardMaterial({
+        map: groundTexture,
+        side: THREE.DoubleSide,
+      });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = Math.PI / 2;
+      ground.position.y = 0;
+      scene.add(ground);
 
-        var mesh = new THREE.Mesh(geometry, orangeMaterial);
-        mesh.position.y = 2.5;
-        scene.add(mesh);
-      }
-      /*
-			{
-				// DRY / don't repeat yourself
-
-				var greenMaterial = new THREE.MeshPhongMaterial({
-			        color: 0x00ff00,
-			        side: THREE.DoubleSide
-			    });
-
-			    var mesh = new THREE.Mesh(geometry, greenMaterial);
-			    mesh.position.y = 2.5
-			    mesh.position.x = 20;
-			    mesh.position.z = 20;
-			    scene.add(mesh);
-			} */
-
-      {
-        var loader = new THREE.TextureLoader();
-        var texture = loader.load("./nature/grass/grass-color.png");
-        texture.colorSpace = THREE.SRGBColorSpace;
-
-        var geometry = new THREE.PlaneGeometry(400, 300);
-        var material = new THREE.MeshStandardMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-        });
-
-        var mesh = new THREE.Mesh(geometry, material);
-        mesh.rotation.x = Math.PI / 2;
-        mesh.position.y = 0; // position au sol
-        scene.add(mesh);
-      }
-
+      // arbres
       loader3ds.load("./nature/tree/tree.3ds", function (object) {
         tree = object;
         tree.rotation.x = -Math.PI / 2;
@@ -93,40 +70,70 @@
         const backZ = 100;
 
         for (let i = 0; i < 6; i++) {
-          // Arbres à gauche
           const frontTree = tree.clone();
           frontTree.position.set(startX + i * spacingX, 0, frontZ);
           scene.add(frontTree);
 
-          // Arbres à droite
           const backTree = tree.clone();
           backTree.position.set(startX + i * spacingX, 0, backZ);
           scene.add(backTree);
         }
       });
 
-      /*       const axesHelper = new THREE.AxesHelper(20);
-      scene.add(axesHelper); */
+      // instanced grass
+      const grassTexture = textureLoader.load("./nature/grass/color.png");
+      grassTexture.colorSpace = THREE.SRGBColorSpace;
 
-      // light
+      const grassMaterial = new THREE.MeshStandardMaterial({
+        map: grassTexture,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
 
-      var light = new THREE.AmbientLight(0xffffff, 0.2);
+      const grassGeometry = new THREE.PlaneGeometry(0.5, 2);
+      const count = 1000000;
+      const instancedGrass = new THREE.InstancedMesh(
+        grassGeometry,
+        grassMaterial,
+        count
+      );
+
+      const dummy = new THREE.Object3D();
+
+      for (let i = 0; i < count; i++) {
+        const x = (Math.random() - 0.5) * 400; // sol = 400x300
+        const z = (Math.random() - 0.5) * 300;
+        const y = 1;
+
+        const scale = 0.5 + Math.random() * 1.5;
+        const rotationY = Math.random() * Math.PI;
+
+        dummy.position.set(x, y, z);
+        dummy.scale.set(scale, scale, scale);
+        dummy.rotation.y = rotationY;
+        dummy.updateMatrix();
+
+        instancedGrass.setMatrixAt(i, dummy.matrix);
+      }
+
+      scene.add(instancedGrass);
+
+      // lumière
+      const light = new THREE.AmbientLight(0xffffff, 0.2);
       scene.add(light);
 
-      var sun = new THREE.DirectionalLight(0xffffff, 1);
-
+      const sun = new THREE.DirectionalLight(0xffffff, 1);
       sun.position.set(0, 10, 0);
       sun.target.position.set(-5, 0, 0);
-
       scene.add(sun);
 
-      var container = document.getElementById("threejs");
+      // camera + orbit
+      const container = document.getElementById("threejs");
       container.appendChild(renderer.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
 
-      var controls = new OrbitControls(camera, renderer.domElement);
-
+      // render loop
       requestAnimationFrame(render);
-
       function render() {
         renderer.render(scene, camera);
         requestAnimationFrame(render);
